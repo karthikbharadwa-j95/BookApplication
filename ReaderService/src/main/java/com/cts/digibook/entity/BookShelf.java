@@ -28,10 +28,6 @@ public class BookShelf {
 	@Column(name = "category")
 	private String category;
 
-//	@Lob
-//	@Column(name = "image")
-//	private byte[] image;
-
 	@Column(name = "price")
 	private Double price;
 

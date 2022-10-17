@@ -2,7 +2,6 @@ package com.cts.digibook.controller;
 
 import java.util.List;
 
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,9 +13,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.cts.digibook.dto.BooksDto;
+import com.cts.digibook.dto.ReaderLogin;
+import com.cts.digibook.dto.SearchBooks;
 import com.cts.digibook.entity.BookShelf;
 import com.cts.digibook.entity.Reader;
 import com.cts.digibook.entity.Subscription;
+import com.cts.digibook.entity.User;
 import com.cts.digibook.response.Response;
 import com.cts.digibook.service.ReaderService;
 
@@ -52,12 +54,28 @@ public class ReaderController {
 
 	}
 
+	// reader login
+	@PostMapping("/login")
+	public ResponseEntity<Response> readerLogin(@RequestBody ReaderLogin readerLogin) {
+		Response response = new Response();
+		User login = readerService.readerLogin(readerLogin);
+		if (login != null) {
+			response.setIsError(false);
+			response.setMsg("Login successful!");
+			return new ResponseEntity<>(response, HttpStatus.OK);
+		} else {
+			response.setIsError(true);
+			response.setMsg("Unable to login!");
+			return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+		}
+	}
+
 	// reader subscribing the book
 	@PostMapping("/subscribe")
 	public ResponseEntity<Response> bookSubscription(@RequestBody Subscription subscription) {
 		Response response = new Response();
 		Subscription bookSubscription = readerService.bookSubscription(subscription);
-		if (bookSubscription == null) {
+		if (bookSubscription != null) {
 			response.setIsError(false);
 			response.setMsg("Data added successful");
 			response.setData(bookSubscription);
@@ -67,6 +85,25 @@ public class ReaderController {
 			response.setMsg("Data was not added successfully!");
 			return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
 		}
+	}
+
+	// reader searching book
+	@PostMapping("/books")
+	public List<BookShelf> searchBook(@RequestBody SearchBooks searchBooks) {
+		Response response = new Response();
+		List<BookShelf> books = readerService.searchBooks(searchBooks);
+//		if (books != null) {
+//			response.setIsError(false);
+//			response.setMsg("Book Found!");
+//			response.setData(books);
+//			return new ResponseEntity<>(response, HttpStatus.OK);
+//		} else {
+//			response.setIsError(true);
+//			response.setMsg("Error finding the book!");
+//			return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+//		}
+		return books;
+
 	}
 
 	// reader finding all purchased books

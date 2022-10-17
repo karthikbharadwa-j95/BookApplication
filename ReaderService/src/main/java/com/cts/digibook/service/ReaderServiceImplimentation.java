@@ -2,6 +2,7 @@ package com.cts.digibook.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -9,10 +10,14 @@ import org.springframework.stereotype.Service;
 import com.cts.digibook.dao.ReaderDao;
 import com.cts.digibook.dao.ShelfDao;
 import com.cts.digibook.dao.SubscriptionDao;
+import com.cts.digibook.dao.UserDao;
 import com.cts.digibook.dto.BooksDto;
+import com.cts.digibook.dto.ReaderLogin;
+import com.cts.digibook.dto.SearchBooks;
 import com.cts.digibook.entity.BookShelf;
 import com.cts.digibook.entity.Reader;
 import com.cts.digibook.entity.Subscription;
+import com.cts.digibook.entity.User;
 import com.cts.digibook.exception.ReaderException;
 import com.cts.digibook.passwordgenerator.GeneratePassword;
 
@@ -25,8 +30,8 @@ public class ReaderServiceImplimentation implements ReaderService {
 	@Autowired
 	private ShelfDao shelfDao;
 
-//	@Autowired
-//	private UserDao userDao;
+	@Autowired
+	private UserDao userDao;
 
 	@Autowired
 	private SubscriptionDao subscriptionDao;
@@ -42,11 +47,11 @@ public class ReaderServiceImplimentation implements ReaderService {
 			String tempPassword = pwd.passwordGenerator(10);
 			readerInfo.setPassword(tempPassword);
 			Reader reader = readerDao.save(readerInfo);
-//			User user = new User();
-//			user.setUserName(reader.getReaderName());
-//			user.setUserPassword(tempPassword);
-//			user.setUserRoles("ROLE_READER");
-//			userDao.save(user);
+			User user = new User();
+			user.setUserName(reader.getReaderName());
+			user.setUserPassword(tempPassword);
+			user.setUserRoles("ROLE_READER");
+			userDao.save(user);
 			emailService.sendEmail(reader.getReaderEmail(), "Spring Test Password",
 					"new temporary Password: " + reader.getPassword());
 			return reader;
@@ -56,9 +61,22 @@ public class ReaderServiceImplimentation implements ReaderService {
 	}
 
 	@Override
+	public User readerLogin(ReaderLogin readerLogin) {
+		User findByUserName = userDao.findByUserName(readerLogin.getUserName());
+		if (findByUserName != null && readerLogin.getUserName().equals(findByUserName.getUserName())
+				&& readerLogin.getUserPassword().equals(findByUserName.getUserPassword())) {
+			return findByUserName;
+		} else {
+			throw new ReaderException("Invalid Credentials!");
+		}
+	}
+
+	@Override
 	public Subscription bookSubscription(Subscription subscription) {
+		System.out.println("##############"+subscription);
 		BookShelf byBookId = shelfDao.findByBookId(subscription.getSubBookId());
 		Reader byReaderId = readerDao.findByReaderId(subscription.getSubReaderId());
+		
 		if (byBookId != null) {
 			if (byReaderId != null) {
 				subscription.setSubBookId(byBookId.getBookId());
@@ -129,21 +147,33 @@ public class ReaderServiceImplimentation implements ReaderService {
 
 	@Override
 	public BookShelf readBook(String readerEmail, String bookId) {
-		BookShelf findByBookId = shelfDao.findByBookId(bookId);
-		Reader findByReaderEmail = readerDao.findByReaderEmail(readerEmail);
-		if (findByBookId != null) {
-			if (findByReaderEmail != null) {
-				findByBookId.getBookId();
-				findByBookId.getTitle();
-				findByBookId.getCategory();
-				findByBookId.getContent();
-			} else {
-				throw new ReaderException("Enter valid Reader Id!");
-			}
-		} else {
-			throw new ReaderException("Book not found!");
-		}
-		return findByBookId;
+		
+	 Optional<Subscription> findBySubBookIdAndSubReaderEmail = subscriptionDao.findBySubBookIdAndSubReaderEmail(readerEmail, bookId);
+	 if(findBySubBookIdAndSubReaderEmail.isPresent()) {
+		 return shelfDao.findByBookId(bookId);
+	 }else {
+		 throw new ReaderException("Book not found for reader!");
+	 }
+		
+		
+//		System.out.println("#################" + readerEmail +"#####"+ bookId);
+//		//BookShelf findByBookId = shelfDao.findByBookId(bookId);
+//		//Reader findByReaderEmail = readerDao.findByReaderEmail(readerEmail);
+//		
+//		if (findByBookId != null) {
+//			if (findByReaderEmail != null) {
+//				findByBookId.getBookId();
+//				findByBookId.getTitle();
+//				findByBookId.getCategory();
+//				findByBookId.getContent();
+//			} else {
+//				throw new ReaderException("Enter valid Reader EmailId!");
+//			}
+//		} else {
+//			throw new ReaderException("Book not found!");
+//		}
+//		return findByBookId;
+		
 	}
 
 	@Override
@@ -159,6 +189,17 @@ public class ReaderServiceImplimentation implements ReaderService {
 		}
 		return findByBookId;
 
+	}
+
+	@Override
+	public List<BookShelf> searchBooks(SearchBooks books) {
+		List<BookShelf> shelf = shelfDao.findBookShelf(books.getCategory(), books.getAuthor(), books.getPrice(),
+				books.getPublisher());
+		if (shelf != null) {
+			return shelf;
+		} else {
+			throw new ReaderException("Book not found!");
+		}
 	}
 
 }
