@@ -20,7 +20,6 @@ import com.cts.digibook.jwtrequestandresponse.JwtResponse;
 import com.cts.digibook.jwtutil.JwtUtil;
 
 @RestController
-@CrossOrigin
 @RequestMapping("/api/v1/digitalbooks/authors")
 public class JwtAuthenticationController {
 
